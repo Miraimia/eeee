@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сообщения на экране</title>
+    <style>
+        /* Стили остаются без изменений */
+    </style>
+</head>
+<body>
+    <div id="messages-container"></div>
+
+    <div id="overlay"></div>
+    <div id="input-container">
+        <input type="text" id="message-input" maxlength="100" placeholder="Введите ваше предложение (до 100 символов)">
+        <button onclick="addMessage()">Отправить</button>
+    </div>
+
+    <!-- Подключаем Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
+
+    <script>
+        // Ваши настройки Firebase
+        const firebaseConfig = {
+            apiKey: "Ваш API ключ",
+            authDomain: "ваш-проект.firebaseapp.com",
+            databaseURL: "https://ваш-проект.firebaseio.com",
+            projectId: "ваш-проект",
+            storageBucket: "ваш-проект.appspot.com",
+            messagingSenderId: "ваш ID отправки сообщений",
+            appId: "ваш ID приложения"
+        };
+
+        // Инициализация Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const messagesRef = firebase.database().ref('messages');
+        const container = document.getElementById('messages-container');
+        const overlay = document.getElementById('overlay');
+
+        // Загрузка сообщений из Firebase
+        messagesRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            container.innerHTML = ''; // Очищаем контейнер
+            const messages = data ? Object.values(data) : [];
+            messages.slice(-10).forEach(displayMessage); // Показываем последние 10 сообщений
+        });
+
+        // Добавить сообщение в Firebase
+        function addMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+
+            if (text === '') {
+                alert('Сообщение не может быть пустым!');
+                return;
+            }
+
+            const message = {
+                text: text,
+                timestamp: Date.now()
+            };
+
+            messagesRef.push(message); // Добавляем сообщение в базу
+            input.value = ''; // Очищаем поле ввода
+        }
+
+        // Отобразить сообщение на экране
+        function displayMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerText = message.text;
+
+            // Случайное расположение
+            div.style.top = `${Math.random() * 80}%`;
+            div.style.left = `${Math.random() * 80}%`;
+
+            // При клике - показать в полном размере
+            div.onclick = () => showFullMessage(message.text);
+
+            container.appendChild(div);
+        }
+
+        // Показать сообщение в полном размере
+        function showFullMessage(text) {
+            overlay.style.display = 'block';
+            const fullMessageDiv = document.createElement('div');
+            fullMessageDiv.className = 'full-message';
+            fullMessageDiv.innerHTML = `
+                <p>${text}</p>
+                <button onclick="closeFullMessage(this)">Закрыть</button>
+            `;
+            document.body.appendChild(fullMessageDiv);
+        }
+
+        // Закрыть большое сообщение
+        function closeFullMessage(button) {
+            overlay.style.display = 'none';
+            const fullMessageDiv = button.parentElement;
+            document.body.removeChild(fullMessageDiv);
+        }
+    </script>
+</body>
+</html>
